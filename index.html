@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ER Diagram Builder · Phase 1</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5/400.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5/500.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5/600.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5/700.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5/800.css"/>
+
+<style>
+/* ============ Base ============ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#4f46e5;--primary-dark:#4338ca;--primary-soft:#eef2ff;--primary-ring:rgba(99,102,241,.16);
+  --blue:#2563eb;--stripe:#635bff;
+  --bg:#f1f5f9;--card:#ffffff;--code-bg:#0f172a;
+  --text:#0f172a;--text-2:#475569;--text-3:#94a3b8;
+  --border:#e2e8f0;--border-soft:#eef2f7;
+  --danger:#ef4444;--success:#10b981;--warning:#f59e0b;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+  --shadow:0 4px 16px rgba(15,23,42,.08);
+  --shadow-lg:0 16px 40px rgba(79,70,229,.22);
+  --radius:14px;
+}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit}
+input,select,textarea{font-family:inherit}
+.hidden{display:none !important}
+
+/* ============ Topbar ============ */
+.topbar{
+  height:64px;background:var(--card);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;padding:0 20px;position:relative;z-index:70;
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-logo{
+  width:38px;height:38px;border-radius:11px;flex-shrink:0;
+  background:linear-gradient(135deg,#6366f1,#2563eb);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:0 4px 12px rgba(79,70,229,.35);
+}
+.brand h1{font-size:15.5px;font-weight:800;letter-spacing:-.2px;white-space:nowrap}
+.brand p{font-size:11px;color:var(--text-3);font-weight:600;white-space:nowrap}
+.spacer{flex:1}
+.stats{display:flex;gap:8px}
+.stat-chip{
+  display:flex;align-items:center;gap:7px;background:#f8fafc;border:1px solid var(--border);
+  padding:6px 12px;border-radius:99px;font-size:12px;color:var(--text-2);font-weight:600;white-space:nowrap;
+}
+.stat-chip i{color:var(--primary);font-size:11px}
+.stat-chip b{color:var(--text);font-weight:800}
+.save-status{
+  display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--success);
+  opacity:0;transform:translateY(3px);transition:.35s;white-space:nowrap;
+}
+.save-status.visible{opacity:1;transform:none}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:#fff;
+  color:var(--text-2);font-size:13px;font-weight:600;padding:9px 14px;border-radius:10px;
+  cursor:pointer;transition:.18s;white-space:nowrap;
+}
+.btn:hover{border-color:#c7d2fe;color:var(--primary);background:var(--primary-soft);transform:translateY(-1px)}
+.btn-primary{
+  background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:0;
+  box-shadow:0 4px 12px rgba(79,70,229,.32);
+}
+.btn-primary:hover{color:#fff;background:linear-gradient(135deg,#5855e8,#4338ca);box-shadow:0 6px 16px rgba(79,70,229,.42)}
+.btn-danger-solid{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn-danger-solid:hover{background:#dc2626;border-color:#dc2626;color:#fff}
+.btn.locked{opacity:.6}
+.btn.locked:hover{background:#fff;border-color:var(--border);color:var(--text-2);transform:none}
+.icon-btn{
+  width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:#fff;
+  color:var(--text-2);cursor:pointer;transition:.18s;display:inline-flex;align-items:center;
+  justify-content:center;font-size:13.5px;flex-shrink:0;
+}
+.icon-btn:hover{border-color:#c7d2fe;color:var(--primary);background:var(--primary-soft);transform:translateY(-1px)}
+.mini-btn{
+  width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--text-3);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:12px;transition:.15s;
+}
+.mini-btn:hover{background:var(--primary-soft);color:var(--primary)}
+.mini-btn.danger:hover{background:#fee2e2;color:var(--danger)}
+
+/* ============ Layout ============ */
+.app{display:grid;grid-template-columns:360px 1fr;height:calc(100vh - 64px)}
+.sidebar{
+  background:var(--card);border-right:1px solid var(--border);overflow-y:auto;
+  padding:16px;display:flex;flex-direction:column;gap:14px;
+}
+.sidebar::-webkit-scrollbar{width:8px}
+.sidebar::-webkit-scrollbar-thumb{background:#dbe2ec;border-radius:99px}
+.workspace{display:flex;flex-direction:column;min-width:0;min-height:0}
+
+/* Tabs (sidebar) */
+.tabs{display:flex;gap:4px;background:#eef1f6;padding:4px;border-radius:12px}
+.tab-btn{
+  flex:1;border:0;background:transparent;padding:9px 4px;border-radius:9px;font-size:12px;
+  font-weight:700;color:var(--text-2);cursor:pointer;display:flex;gap:6px;align-items:center;
+  justify-content:center;transition:.2s;
+}
+.tab-btn i{font-size:11px}
+.tab-btn:hover{color:var(--primary)}
+.tab-btn.active{background:#fff;color:var(--primary);box-shadow:var(--shadow-sm)}
+.tab-count{background:var(--primary-soft);color:var(--primary);border-radius:99px;font-size:10px;padding:1px 6px;font-weight:800}
+
+/* Panels & forms */
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 10px}
+.panel-title{font-size:13px;font-weight:800;display:flex;gap:8px;align-items:center;letter-spacing:-.1px;flex-wrap:wrap}
+.panel-title i{color:var(--primary);font-size:12px}
+.panel-hint{font-size:12px;color:var(--text-3);margin:-4px 2px 12px;line-height:1.5}
+.form-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow-sm)}
+.field{margin-bottom:11px}
+.field:last-of-type{margin-bottom:0}
+.field label{
+  font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:5px;display:block;
+}
+.field input,.field select{
+  width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;
+  font-size:13.5px;background:#fff;color:var(--text);transition:.18s;outline:none;
+}
+.field input:focus,.field select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-ring)}
+.field select{
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;padding-right:32px;cursor:pointer;
+}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.toggles{display:flex;gap:8px}
+.toggle-chip{position:relative;flex:1}
+.toggle-chip input{position:absolute;opacity:0;pointer-events:none}
+.toggle-chip span{
+  display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;
+  border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:700;
+  color:var(--text-2);cursor:pointer;transition:.18s;user-select:none;
+}
+.toggle-chip span:hover{border-color:#c7d2fe}
+.toggle-chip input:checked + span{
+  background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border-color:transparent;
+  box-shadow:0 3px 9px rgba(79,70,229,.32);
+}
+.form-actions{display:flex;gap:8px;margin-top:13px}
+.form-actions .btn-primary,.form-actions .btn{flex:1;justify-content:center;padding:10px 12px}
+
+/* Lists */
+.list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.list-item{
+  display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--border);
+  border-radius:12px;padding:10px 12px;transition:.18s;cursor:pointer;animation:fadeIn .2s ease;
+}
+.list-item:hover{border-color:#c7d2fe;box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.list-item.selected{border-color:var(--primary);background:linear-gradient(135deg,#eef2ff,#fff);box-shadow:0 0 0 3px var(--primary-ring)}
+.item-icon{
+  width:34px;height:34px;border-radius:9px;background:var(--primary-soft);color:var(--primary);
+  display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;
+}
+.item-icon.pk{background:#fef3c7;color:#d97706}
+.item-icon.fk{background:#dbeafe;color:#2563eb}
+.item-body{flex:1;min-width:0}
+.item-name{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;word-break:break-word}
+.item-meta{font-size:11.5px;color:var(--text-3);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.item-actions{display:flex;gap:3px;opacity:0;transition:.18s;flex-shrink:0}
+.list-item:hover .item-actions,.list-item.selected .item-actions{opacity:1}
+@media (hover:none){.item-actions{opacity:1}}
+.badge{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:99px;letter-spacing:.5px}
+.badge.pk{background:#fef3c7;color:#b45309}
+.badge.fk{background:#dbeafe;color:#1d4ed8}
+.badge.card{background:var(--primary-soft);color:var(--primary)}
+.rel-mini-arrow{font-size:10px;color:var(--text-3)}
+.rename-input{
+  width:100%;padding:6px 9px;border:1.5px solid var(--primary);border-radius:8px;
+  font-size:13.5px;font-weight:700;outline:none;box-shadow:0 0 0 3px var(--primary-ring);
+}
+.empty-mini{
+  border:1.5px dashed var(--border);border-radius:12px;padding:22px 16px;text-align:center;
+  color:var(--text-3);font-size:12.5px;margin-top:14px;line-height:1.5;
+}
+.empty-mini i{font-size:20px;display:block;margin-bottom:9px;color:#c7d2fe}
+.sidebar-footer{margin-top:auto;padding-top:12px;font-size:11px;color:var(--text-3);display:flex;gap:7px;align-items:center;justify-content:center}
+.sidebar-footer i{color:#a5b4fc}
+
+/* ============ Toolbar ============ */
+.toolbar{
+  display:flex;align-items:center;gap:10px;padding:12px 20px;background:#fff;
+  border-bottom:1px solid var(--border);flex-wrap:wrap;
+}
+.seg{display:flex;background:#e7ebf2;padding:4px;border-radius:11px;gap:2px}
+.seg button{
+  border:0;background:transparent;padding:7px 15px;border-radius:8px;font-weight:700;font-size:12.5px;
+  color:var(--text-2);cursor:pointer;display:flex;gap:7px;align-items:center;transition:.2s;white-space:nowrap;
+}
+.seg button i{font-size:11px}
+.seg button.active{background:#fff;color:var(--primary);box-shadow:var(--shadow-sm)}
+.sql-tab-lock{font-size:9px;color:#d97706}
+.sql-unlocked .sql-tab-lock{display:none}
+.toolbar-divider{width:1px;height:24px;background:var(--border)}
+.zoom-group{display:flex;align-items:center;gap:6px}
+.zoom-level{font-size:12px;font-weight:800;color:var(--text-2);min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
+.toolbar-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);margin-right:2px}
+
+/* ============ Canvas ============ */
+.content{flex:1;position:relative;overflow:hidden;min-height:0}
+.view{position:absolute;inset:0;display:none}
+.view.active{display:block}
+.canvas-wrap{
+  position:absolute;inset:0;
+  background-color:#f8fafc;
+  background-image:radial-gradient(#cbd5e1 1px,transparent 1px);
+  background-size:22px 22px;
+}
+.diagram-scroll{position:absolute;inset:0;overflow:auto;padding:32px}
+.diagram-zoom{display:inline-block;transform-origin:0 0;transition:transform .15s ease}
+#diagram svg{display:block;max-width:none;border-radius:10px;filter:drop-shadow(0 6px 16px rgba(15,23,42,.08))}
+.empty-state{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:14px;text-align:center;padding:24px;
+}
+.empty-state .big-icon{
+  width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,#eef2ff,#dbeafe);
+  color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:34px;
+  box-shadow:var(--shadow);
+}
+.empty-state h3{font-size:17px;font-weight:800;letter-spacing:-.2px}
+.empty-state p{font-size:13px;color:var(--text-3);max-width:340px;line-height:1.6}
+.error-banner{
+  position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:10;
+  background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12.5px;font-weight:600;
+  padding:10px 16px;border-radius:11px;display:flex;gap:9px;align-items:center;box-shadow:var(--shadow);
+  max-width:min(92%,560px);
+}
+
+/* Code view */
+.code-wrap{position:absolute;inset:0;overflow:auto;padding:24px}
+.code-card{
+  background:var(--code-bg);border-radius:16px;padding:18px 22px 22px;box-shadow:var(--shadow);
+  max-width:900px;margin:0 auto;
+}
+.code-head{display:flex;align-items:center;gap:7px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #1e293b;flex-wrap:wrap}
+.dot{width:11px;height:11px;border-radius:50%}
+.dot.r{background:#f87171}.dot.y{background:#fbbf24}.dot.g{background:#34d399}
+.code-title{margin-left:10px;color:#64748b;font-size:12px;font-family:ui-monospace,Consolas,monospace}
+.code-status{margin-left:auto;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.code-status.synced{background:rgba(16,185,129,.14);color:#34d399}
+.code-status.dirty{background:rgba(245,158,11,.16);color:#fbbf24}
+.code-head .mini-btn{color:#64748b;margin-left:8px}
+.code-head .mini-btn:hover{background:#1e293b;color:#a5b4fc}
+#mermaidTextArea{
+  width:100%;min-height:320px;resize:vertical;background:#0b1220;color:#e2e8f0;
+  border:1.5px solid #1e293b;border-radius:10px;padding:14px;outline:none;transition:.18s;
+  font-family:ui-monospace,'Cascadia Code',Consolas,Menlo,monospace;font-size:13px;line-height:1.75;
+  white-space:pre;overflow-wrap:normal;overflow-x:auto;
+}
+#mermaidTextArea:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.25)}
+.code-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+
+/* SQL view */
+.sql-wrap{position:absolute;inset:0;overflow:auto;padding:24px}
+.sql-inner{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.sql-toolbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow-sm);
+}
+.sql-info{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.sql-info i{color:var(--primary)}
+.sql-info .sql-count{color:var(--text-3);font-weight:600}
+.sql-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+#paywallLockBtn.gate-locked{color:#d97706;border-color:#fde68a;background:#fffbeb}
+#paywallLockBtn.gate-locked:hover{color:#b45309;border-color:#fcd34d;background:#fef3c7}
+#paywallLockBtn.gate-open{color:var(--success);border-color:#a7f3d0;background:#ecfdf5}
+#paywallLockBtn.gate-open:hover{color:#059669;border-color:#6ee7b7;background:#d1fae5}
+.sql-card{
+  background:var(--code-bg);border-radius:16px;padding:18px 22px 22px;box-shadow:var(--shadow);
+}
+.sql-head{display:flex;align-items:center;gap:7px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #1e293b}
+.sql-head .code-title{margin-left:10px}
+.sql-card pre{
+  color:#e2e8f0;font-family:ui-monospace,'Cascadia Code',Consolas,Menlo,monospace;
+  font-size:13px;line-height:1.75;white-space:pre;overflow-x:auto;
+}
+
+/* ============ Modals ============ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(3px);
+  display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;
+  opacity:0;pointer-events:none;transition:.2s;
+}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal{
+  background:#fff;border-radius:18px;padding:26px;max-width:390px;width:100%;
+  box-shadow:0 24px 64px rgba(15,23,42,.28);transform:scale(.94) translateY(10px);
+  transition:.22s;text-align:center;
+}
+.modal-overlay.show .modal{transform:none}
+.modal-icon{
+  width:52px;height:52px;border-radius:16px;background:#fee2e2;color:var(--danger);
+  display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 14px;
+}
+.modal-icon.info{background:var(--primary-soft);color:var(--primary)}
+.modal h3{font-size:16px;font-weight:800;margin-bottom:8px;letter-spacing:-.2px}
+.modal p{font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px}
+.modal-actions .btn{flex:1;justify-content:center;padding:10px 12px}
+
+/* ============ Paywall ============ */
+.paywall{
+  background:#fff;border-radius:20px;max-width:400px;width:100%;padding:28px;position:relative;
+  box-shadow:0 30px 80px rgba(15,23,42,.35);transform:scale(.94) translateY(10px);
+  transition:.22s;text-align:center;max-height:calc(100vh - 40px);overflow-y:auto;
+}
+.modal-overlay.show .paywall{transform:none}
+.paywall-close{position:absolute;top:14px;right:14px;width:32px;height:32px;font-size:14px;border-radius:9px}
+.test-badge{
+  display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#b45309;
+  font-size:10.5px;font-weight:800;letter-spacing:.8px;padding:4px 11px;border-radius:99px;margin-bottom:16px;
+}
+.paywall-icon{
+  width:64px;height:64px;margin:0 auto 14px;border-radius:18px;
+  background:linear-gradient(135deg,#635bff,#4f46e5);color:#fff;font-size:24px;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(99,91,255,.4);
+}
+.paywall h3{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.paywall .sub{font-size:12.5px;color:var(--text-3);margin:5px 0 12px;line-height:1.5}
+.price{font-size:36px;font-weight:800;letter-spacing:-1px;margin-bottom:16px}
+.price small{font-size:13px;color:var(--text-3);font-weight:600;letter-spacing:0}
+.paywall input{
+  width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;
+  font-size:13.5px;margin-bottom:9px;outline:none;transition:.18s;color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.paywall input:focus{border-color:var(--stripe);box-shadow:0 0 0 3px rgba(99,91,255,.15)}
+.stripe-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stripe-btn{
+  width:100%;margin-top:6px;background:var(--stripe);color:#fff;border:0;padding:13px;
+  border-radius:11px;font-size:14.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:9px;transition:.18s;box-shadow:0 6px 16px rgba(99,91,255,.35);
+}
+.stripe-btn:hover{background:#5851ec;transform:translateY(-1px)}
+.stripe-btn:disabled{opacity:.75;cursor:wait;transform:none}
+.powered{margin-top:14px;font-size:11px;color:var(--text-3);display:flex;flex-direction:column;gap:3px}
+.powered b{color:var(--stripe);font-weight:800;letter-spacing:.3px}
+
+/* ============ Toasts ============ */
+#toastContainer{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:300}
+.toast{
+  display:flex;align-items:center;gap:10px;background:#0f172a;color:#f1f5f9;padding:12px 16px;
+  border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(15,23,42,.35);
+  opacity:0;transform:translateY(14px);transition:.3s;max-width:340px;
+}
+.toast.show{opacity:1;transform:none}
+.toast i{font-size:14px}
+.toast-success i{color:#34d399}
+.toast-error i{color:#f87171}
+.toast-info i{color:#818cf8}
+.toast-warning i{color:#fbbf24}
+
+/* ============ Mobile ============ */
+#sidebarToggle{display:none}
+.sidebar-backdrop{
+  position:fixed;inset:0;top:64px;background:rgba(15,23,42,.4);z-index:55;
+  opacity:0;pointer-events:none;transition:.25s;
+}
+.sidebar-backdrop.show{opacity:1;pointer-events:auto}
+@media (max-width:1180px){.stats{display:none}}
+@media (max-width:960px){
+  #sidebarToggle{display:inline-flex}
+  .app{grid-template-columns:1fr}
+  .sidebar{
+    position:fixed;left:0;top:64px;bottom:0;width:min(350px,88vw);z-index:60;
+    transform:translateX(-105%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+    box-shadow:none;border-right:1px solid var(--border);
+  }
+  .sidebar.open{transform:translateX(0);box-shadow:var(--shadow-lg)}
+  .topbar{gap:10px;padding:0 14px}
+  .brand p{display:none}
+  .topbar .btn span{display:none}
+  .topbar .btn{padding:9px 11px}
+  .toolbar{padding:10px 12px;gap:8px}
+  .toolbar-divider{display:none}
+  .seg button{padding:7px 10px;font-size:11.5px}
+  .code-wrap,.sql-wrap{padding:14px}
+  .sql-actions{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= TOPBAR ================= -->
+<header class="topbar">
+  <button class="icon-btn" id="sidebarToggle" aria-label="Toggle builder panel"><i class="fa-solid fa-bars"></i></button>
+  <div class="brand">
+    <div class="brand-logo"><i class="fa-solid fa-diagram-project"></i></div>
+    <div>
+      <h1>ER Diagram Builder</h1>
+      <p>Phase 1 · Manual Builder</p>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="stats">
+    <span class="stat-chip"><i class="fa-solid fa-cube"></i><b id="statsEntities">0</b>&nbsp;Entities</span>
+    <span class="stat-chip"><i class="fa-solid fa-key"></i><b id="statsAttrs">0</b>&nbsp;Attributes</span>
+    <span class="stat-chip"><i class="fa-solid fa-arrow-right-arrow-left"></i><b id="statsRels">0</b>&nbsp;Relations</span>
+  </div>
+  <span class="save-status" id="saveStatus"><i class="fa-solid fa-circle-check"></i> Saved</span>
+  <button class="btn" id="sampleBtn" title="Load sample diagram"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Sample</span></button>
+  <button class="btn" id="clearBtn" title="Clear everything"><i class="fa-solid fa-trash-can"></i><span>Clear</span></button>
+  <button class="btn btn-primary" id="saveBtn" title="Save to browser"><i class="fa-solid fa-floppy-disk"></i><span>Save</span></button>
+</header>
+
+<div class="app">
+
+  <!-- ================= SIDEBAR (unchanged) ================= -->
+  <aside class="sidebar" id="sidebar">
+
+    <nav class="tabs" aria-label="Builder sections">
+      <button class="tab-btn active" data-tab="entities"><i class="fa-solid fa-cube"></i>Entities <span class="tab-count" id="tabCountEntities">0</span></button>
+      <button class="tab-btn" data-tab="attributes"><i class="fa-solid fa-list-ul"></i>Attributes <span class="tab-count" id="tabCountAttrs">0</span></button>
+      <button class="tab-btn" data-tab="relationships"><i class="fa-solid fa-arrow-right-arrow-left"></i>Relations <span class="tab-count" id="tabCountRels">0</span></button>
+    </nav>
+
+    <!-- Entities panel -->
+    <section class="panel active" id="panel-entities">
+      <div class="panel-title"><i class="fa-solid fa-cube"></i> Add Entity</div>
+      <p class="panel-hint">Entities are the tables of your model. Click one to edit its attributes.</p>
+      <form class="form-card" id="entityForm" autocomplete="off">
+        <div class="field">
+          <label for="entityNameInput">Entity name</label>
+          <input type="text" id="entityNameInput" placeholder="e.g. Customer" maxlength="40" spellcheck="false"/>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Entity</button>
+        </div>
+      </form>
+      <div class="list" id="entityList"></div>
+    </section>
+
+    <!-- Attributes panel -->
+    <section class="panel" id="panel-attributes">
+      <div class="panel-title"><i class="fa-solid fa-key"></i> Attributes · <span id="attrListTitle">—</span></div>
+      <p class="panel-hint">Pick an entity, then define its columns. Mark primary &amp; foreign keys.</p>
+      <form class="form-card" id="attrForm" autocomplete="off">
+        <div class="field">
+          <label for="attrEntitySelect">Entity</label>
+          <select id="attrEntitySelect"></select>
+        </div>
+        <div class="field">
+          <label for="attrNameInput">Attribute name</label>
+          <input type="text" id="attrNameInput" placeholder="e.g. email" maxlength="40" spellcheck="false"/>
+        </div>
+        <div class="field">
+          <label for="attrTypeSelect">Data type</label>
+          <select id="attrTypeSelect"></select>
+        </div>
+        <div class="field">
+          <label>Constraints</label>
+          <div class="toggles">
+            <label class="toggle-chip">
+              <input type="checkbox" id="chkPK"/>
+              <span><i class="fa-solid fa-key"></i> Primary Key</span>
+            </label>
+            <label class="toggle-chip">
+              <input type="checkbox" id="chkFK"/>
+              <span><i class="fa-solid fa-link"></i> Foreign Key</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="attrSubmitBtn"><i class="fa-solid fa-plus"></i> Add Attribute</button>
+          <button type="button" class="btn hidden" id="attrCancelBtn"><i class="fa-solid fa-xmark"></i> Cancel</button>
+        </div>
+      </form>
+      <div class="list" id="attrList"></div>
+    </section>
+
+    <!-- Relationships panel -->
+    <section class="panel" id="panel-relationships">
+      <div class="panel-title"><i class="fa-solid fa-arrow-right-arrow-left"></i> Relationships</div>
+      <p class="panel-hint">Connect two entities and describe how they relate.</p>
+      <form class="form-card" id="relForm" autocomplete="off">
+        <div class="row-2">
+          <div class="field">
+            <label for="relFrom">From</label>
+            <select id="relFrom"></select>
+          </div>
+          <div class="field">
+            <label for="relTo">To</label>
+            <select id="relTo"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="relCardinality">Cardinality</label>
+          <select id="relCardinality"></select>
+        </div>
+        <div class="field">
+          <label for="relLabel">Label <span style="text-transform:none;font-weight:500;color:var(--text-3)">(optional)</span></label>
+          <input type="text" id="relLabel" placeholder="e.g. enrolls in" maxlength="40" spellcheck="false"/>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="relSubmitBtn"><i class="fa-solid fa-plus"></i> Add Relationship</button>
+          <button type="button" class="btn hidden" id="relCancelBtn"><i class="fa-solid fa-xmark"></i> Cancel</button>
+        </div>
+      </form>
+      <div class="list" id="relList"></div>
+    </section>
+
+    <div class="sidebar-footer"><i class="fa-solid fa-shield-halved"></i> State auto-saves to this browser</div>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ================= WORKSPACE ================= -->
+  <main class="workspace">
+    <div class="toolbar">
+      <div class="seg" role="tablist">
+        <button class="active" id="viewDiagramBtn"><i class="fa-solid fa-diagram-project"></i> Diagram</button>
+        <button id="viewCodeBtn"><i class="fa-solid fa-code"></i> Mermaid Code</button>
+        <button id="viewSqlBtn"><i class="fa-solid fa-database"></i> SQL Schema <i class="fa-solid fa-lock sql-tab-lock"></i></button>
+      </div>
+      <div class="spacer"></div>
+      <div class="zoom-group" id="zoomGroup">
+        <button class="icon-btn" id="zoomOut" title="Zoom out" aria-label="Zoom out"><i class="fa-solid fa-minus"></i></button>
+        <span class="zoom-level" id="zoomLevel">100%</span>
+        <button class="icon-btn" id="zoomIn" title="Zoom in" aria-label="Zoom in"><i class="fa-solid fa-plus"></i></button>
+        <button class="icon-btn" id="zoomReset" title="Reset zoom" aria-label="Reset zoom"><i class="fa-solid fa-expand"></i></button>
+        <div class="toolbar-divider"></div>
+      </div>
+      <span class="toolbar-label">Export</span>
+      <button class="icon-btn" id="copyCodeBtn" title="Copy Mermaid code" aria-label="Copy Mermaid code"><i class="fa-solid fa-copy"></i></button>
+      <button class="icon-btn" id="downloadMmdBtn" title="Download .mmd" aria-label="Download Mermaid file"><i class="fa-solid fa-file-code"></i></button>
+      <button class="icon-btn" id="downloadSvgBtn" title="Download SVG" aria-label="Download SVG"><i class="fa-solid fa-file-image"></i></button>
+      <button class="icon-btn" id="downloadPngBtn" title="Download PNG" aria-label="Download PNG"><i class="fa-solid fa-image"></i></button>
+    </div>
+
+    <div class="content">
+      <!-- Diagram view -->
+      <section class="view active" id="diagramView">
+        <div class="canvas-wrap">
+          <div class="diagram-scroll" id="diagramScroll">
+            <div class="diagram-zoom" id="diagramZoom">
+              <div id="diagram"></div>
+            </div>
+          </div>
+          <div class="error-banner hidden" id="errorBanner"><i class="fa-solid fa-triangle-exclamation"></i><span id="errorText"></span></div>
+          <div class="empty-state" id="emptyState">
+            <div class="big-icon"><i class="fa-solid fa-diagram-project"></i></div>
+            <h3>Your canvas is empty</h3>
+            <p>Add entities in the builder panel, or load the sample University model to see the generator in action.</p>
+            <button class="btn btn-primary" id="emptySampleBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Load Sample</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mermaid Code view (editable) -->
+      <section class="view" id="codeView">
+        <div class="code-wrap">
+          <div class="code-card">
+            <div class="code-head">
+              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+              <span class="code-title">er-diagram.mmd</span>
+              <span class="code-status synced" id="codeStatus">In sync with builder</span>
+              <button class="mini-btn" id="codeCopyBtn" title="Copy code" aria-label="Copy code"><i class="fa-solid fa-copy"></i></button>
+            </div>
+            <textarea id="mermaidTextArea" spellcheck="false" aria-label="Mermaid code editor"></textarea>
+            <div class="code-actions">
+              <button class="btn btn-primary" id="updateDiagramBtn"><i class="fa-solid fa-arrows-rotate"></i> Update Diagram</button>
+              <button class="btn" id="resetCodeBtn"><i class="fa-solid fa-clock-rotate-left"></i> Reset to Builder</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SQL Schema view -->
+      <section class="view" id="sqlView">
+        <div class="sql-wrap">
+          <div class="sql-inner">
+            <div class="sql-toolbar">
+              <div class="sql-info">
+                <i class="fa-solid fa-database"></i> Generated schema
+                <span class="sql-count" id="sqlTableCount">0 tables</span>
+              </div>
+              <div class="sql-actions">
+                <button class="btn" id="copySqlBtn"><i class="fa-solid fa-copy"></i> Copy SQL</button>
+                <button class="btn btn-primary locked" id="downloadSqlBtn"><i class="fa-solid fa-lock"></i> Download .sql</button>
+                <button class="icon-btn gate-locked" id="paywallLockBtn" title="SQL export is locked — click to unlock" aria-label="Unlock SQL export"><i class="fa-solid fa-lock"></i></button>
+              </div>
+            </div>
+            <div class="sql-card">
+              <div class="sql-head">
+                <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+                <span class="code-title">er-schema.sql</span>
+              </div>
+              <pre><code id="sqlBlock"></code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- ================= CONFIRM MODAL ================= -->
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal" role="alertdialog" aria-modal="true">
+    <div class="modal-icon" id="confirmModalIcon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button class="btn" id="confirmCancel">Cancel</button>
+      <button class="btn btn-danger-solid" id="confirmOk">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PAYWALL (Stripe test mock) ================= -->
+<div class="modal-overlay" id="paywallOverlay">
+  <div class="paywall" role="dialog" aria-modal="true" aria-label="Unlock SQL export">
+    <button class="mini-btn paywall-close" id="paywallClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    <div class="test-badge"><i class="fa-solid fa-flask"></i> STRIPE TEST MODE</div>
+    <div class="paywall-icon"><i class="fa-solid fa-lock"></i></div>
+    <h3>Unlock SQL Export</h3>
+    <p class="sub">One-time purchase · lifetime access on this device.<br/>Export production-ready CREATE TABLE scripts anytime.</p>
+    <div class="price">$2.99 <small>USD</small></div>
+    <input id="cardNumber" value="4242 4242 4242 4242" inputmode="numeric" aria-label="Card number"/>
+    <div class="stripe-row">
+      <input id="cardExp" value="12 / 29" aria-label="Expiry date"/>
+      <input id="cardCvc" value="242" inputmode="numeric" aria-label="CVC"/>
+    </div>
+    <button class="stripe-btn" id="payBtn"><i class="fa-solid fa-lock"></i> Pay $2.99</button>
+    <div class="powered">
+      <span>Powered by <b>stripe</b> · simulated checkout</span>
+      <span>No real charge — this is a demo paywall.</span>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+'use strict';
+
+/* ============================================================
+   ER DIAGRAM BUILDER — Phase 1 · Full Application Logic
+   Vanilla JS · global state · localStorage auto-save
+============================================================ */
+
+/* ============================================================
+   1. THE STATE
+============================================================ */
+const state = {
+  entities: [],        // { id, name }
+  attributes: [],      // { id, entityId, name, type, isPK, isFK }
+  relationships: [],   // { id, fromEntityId, toEntityId, cardinality, label }
+  isSqlUnlocked: false // Toggle for the paywall
+};
+
+const STORAGE_KEY = 'er-builder-phase1';
+
+/* Transient (non-persisted) UI state */
+let selectedEntityId = null;
+let editingEntityId = null;
+let editingAttributeId = null;
+let editingRelationshipId = null;
+let customCode = null;       // user-edited Mermaid code (overrides generated)
+let lastSql = '';
+let zoomLevel = 1;
+let renderSeq = 0;
+let renderTimer = null;
+let confirmResolver = null;
+let payTimer = null;
+let flashTimer = null;
+
+/* ============================================================
+   CONSTANTS
+============================================================ */
+const TYPE_OPTIONS = ['int','bigint','smallint','decimal','float','double','char','varchar','string','text','boolean','date','time','datetime','timestamp','uuid','blob','json','enum'];
+
+const CARDINALITIES = [
+  { value: '1:1', symbol: '||--||', label: 'One to One (1:1)' },
+  { value: '1:N', symbol: '||--o{', label: 'One to Many (1:N)' },
+  { value: 'N:M', symbol: '}o--o{', label: 'Many to Many (N:M)' }
+];
+
+const SQL_TYPES = {
+  int:'INT', bigint:'BIGINT', smallint:'SMALLINT', decimal:'DECIMAL(10,2)', float:'FLOAT',
+  double:'DOUBLE PRECISION', char:'CHAR(1)', varchar:'VARCHAR(255)', string:'VARCHAR(255)',
+  text:'TEXT', boolean:'BOOLEAN', date:'DATE', time:'TIME', datetime:'DATETIME',
+  timestamp:'TIMESTAMP', uuid:'UUID', blob:'BLOB', json:'JSON', enum:'VARCHAR(50)'
+};
+
+/* ============================================================
+   2. HELPERS
+============================================================ */
+const $ = id => document.getElementById(id);
+
+const uid = () =>
+  (window.crypto && typeof window.crypto.randomUUID === 'function')
+    ? crypto.randomUUID()
+    : 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+
+const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+function sanitizeName(n){
+  let s = String(n ?? '').trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  if(!s) s = 'unnamed';
+  if(/^\d/.test(s)) s = '_' + s;
+  return s;
+}
+const snake = n => sanitizeName(n).toLowerCase();
+const toSqlType = t => SQL_TYPES[t] || String(t).toUpperCase();
+
+const getEntity = id => state.entities.find(e => e.id === id) || null;
+const getEntityName = id => getEntity(id)?.name || '(deleted)';
+
+const miniEmpty = (icon, text) =>
+  `<div class="empty-mini"><i class="fa-solid ${icon}"></i>${escapeHtml(text)}</div>`;
+
+/* ---------- DOM refs ---------- */
+const sidebar = $('sidebar'), sidebarBackdrop = $('sidebarBackdrop');
+const entityForm = $('entityForm'), entityNameInput = $('entityNameInput'), entityList = $('entityList');
+const attrForm = $('attrForm'), attrEntitySelect = $('attrEntitySelect'), attrNameInput = $('attrNameInput'),
+      attrTypeSelect = $('attrTypeSelect'), chkPK = $('chkPK'), chkFK = $('chkFK'),
+      attrSubmitBtn = $('attrSubmitBtn'), attrCancelBtn = $('attrCancelBtn'),
+      attrList = $('attrList'), attrListTitle = $('attrListTitle');
+const relForm = $('relForm'), relFrom = $('relFrom'), relTo = $('relTo'), relCardinality = $('relCardinality'),
+      relLabel = $('relLabel'), relSubmitBtn = $('relSubmitBtn'), relCancelBtn = $('relCancelBtn'), relList = $('relList');
+const diagram = $('diagram'), diagramScroll = $('diagramScroll'), diagramZoom = $('diagramZoom'),
+      emptyState = $('emptyState'), errorBanner = $('errorBanner'), errorText = $('errorText');
+const mermaidTextArea = $('mermaidTextArea'), codeStatus = $('codeStatus');
+const sqlBlock = $('sqlBlock'), sqlTableCount = $('sqlTableCount');
+const zoomLevelEl = $('zoomLevel'), zoomGroup = $('zoomGroup');
+const saveStatus = $('saveStatus'), toastContainer = $('toastContainer');
+const statsEntities = $('statsEntities'), statsAttrs = $('statsAttrs'), statsRels = $('statsRels');
+const tabCountEntities = $('tabCountEntities'), tabCountAttrs = $('tabCountAttrs'), tabCountRels = $('tabCountRels');
+const downloadSqlBtn = $('downloadSqlBtn'), copySqlBtn = $('copySqlBtn'), paywallLockBtn = $('paywallLockBtn');
+const paywallOverlay = $('paywallOverlay'), payBtn = $('payBtn');
+
+/* ============================================================
+   3. PERSISTENCE (auto-save / load)
+============================================================ */
+function flashSaved(){
+  if(!saveStatus) return;
+  saveStatus.classList.add('visible');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => saveStatus.classList.remove('visible'), 1600);
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    flashSaved();
+  }catch(err){ /* storage unavailable */ }
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    if(!data || !Array.isArray(data.entities)) return false;
+    state.entities = data.entities;
+    state.attributes = Array.isArray(data.attributes) ? data.attributes : [];
+    state.relationships = Array.isArray(data.relationships) ? data.relationships : [];
+    state.isSqlUnlocked = !!data.isSqlUnlocked;
+    return true;
+  }catch(err){ return false; }
+}
+
+/* Single entry point after any mutation: persist + repaint */
+function commit(){
+  saveState();
+  refreshAll();
+}
+
+/* ============================================================
+   4. TOASTS
+============================================================ */
+function toast(msg, type = 'info'){
+  if(!toastContainer) return;
+  const icons = { success:'fa-circle-check', error:'fa-circle-xmark', info:'fa-circle-info', warning:'fa-triangle-exclamation' };
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span></span>`;
+  el.querySelector('span').textContent = msg;
+  toastContainer.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); }, 3000);
+}
+
+/* ============================================================
+   5. CONFIRM MODAL
+============================================================ */
+function confirmDialog({ title, message, okText = 'Confirm', danger = true, icon }){
+  $('confirmTitle').textContent = title;
+  $('confirmMessage').textContent = message;
+  const ok = $('confirmOk');
+  ok.innerHTML = `<i class="fa-solid ${danger ? 'fa-trash-can' : 'fa-check'}"></i> ${okText}`;
+  ok.className = 'btn ' + (danger ? 'btn-danger-solid' : 'btn-primary');
+  const iconBox = $('confirmModalIcon');
+  iconBox.className = 'modal-icon' + (danger ? '' : ' info');
+  iconBox.innerHTML = `<i class="fa-solid ${icon || (danger ? 'fa-triangle-exclamation' : 'fa-wand-magic-sparkles')}"></i>`;
+  $('confirmOverlay').classList.add('show');
+  return new Promise(res => { confirmResolver = res; });
+}
+function closeConfirm(result){
+  if(!confirmResolver) return;
+  $('confirmOverlay').classList.remove('show');
+  const r = confirmResolver; confirmResolver = null; r(result);
+}
+
+/* ============================================================
+   6. SAMPLE DATA
+============================================================ */
+function sampleState(){
+  const student    = { id: uid(), name: 'Student' };
+  const course     = { id: uid(), name: 'Course' };
+  const instructor = { id: uid(), name: 'Instructor' };
+  return {
+    entities: [student, course, instructor],
+    attributes: [
+      { id: uid(), entityId: student.id,    name: 'student_id',    type: 'int',     isPK: true,  isFK: false },
+      { id: uid(), entityId: student.id,    name: 'full_name',     type: 'varchar', isPK: false, isFK: false },
+      { id: uid(), entityId: student.id,    name: 'email',         type: 'varchar', isPK: false, isFK: false },
+      { id: uid(), entityId: student.id,    name: 'enroll_date',   type: 'date',    isPK: false, isFK: false },
+      { id: uid(), entityId: course.id,     name: 'course_id',     type: 'int',     isPK: true,  isFK: false },
+      { id: uid(), entityId: course.id,     name: 'title',         type: 'varchar', isPK: false, isFK: false },
+      { id: uid(), entityId: course.id,     name: 'credits',       type: 'int',     isPK: false, isFK: false },
+      { id: uid(), entityId: course.id,     name: 'instructor_id', type: 'int',     isPK: false, isFK: true  },
+      { id: uid(), entityId: instructor.id, name: 'instructor_id', type: 'int',     isPK: true,  isFK: false },
+      { id: uid(), entityId: instructor.id, name: 'full_name',     type: 'varchar', isPK: false, isFK: false },
+      { id: uid(), entityId: instructor.id, name: 'department',    type: 'varchar', isPK: false, isFK: false }
+    ],
+    relationships: [
+      { id: uid(), fromEntityId: student.id,    toEntityId: course.id, cardinality: 'N:M', label: 'enrolls in' },
+      { id: uid(), fromEntityId: instructor.id, toEntityId: course.id, cardinality: '1:N', label: 'teaches' }
+    ]
+  };
+}
+function applyState(s){
+  state.entities = [...(s.entities || [])];
+  state.attributes = [...(s.attributes || [])];
+  state.relationships = [...(s.relationships || [])];
+}
+
+/* ============================================================
+   7. MERMAID CODE GENERATION
+============================================================ */
+function generateMermaidCode(){
+  const lines = ['erDiagram'];
+
+  state.entities.forEach(ent => {
+    const ename = sanitizeName(ent.name);
+    const attrs = state.attributes.filter(a => a.entityId === ent.id);
+    if(attrs.length){
+      lines.push(`    ${ename} {`);
+      attrs.forEach(a => {
+        const aname = sanitizeName(a.name);
+        if(!aname) return;
+        const key = a.isPK ? ' PK' : (a.isFK ? ' FK' : '');
+        lines.push(`        ${a.type} ${aname}${key}`);
+      });
+      lines.push('    }');
+    }else{
+      lines.push(`    ${ename}`);
+    }
+  });
+
+  state.relationships.forEach(r => {
+    const fromEnt = getEntity(r.fromEntityId);
+    const toEnt = getEntity(r.toEntityId);
+    if(!fromEnt || !toEnt) return; // skip orphaned relationships
+    const c = CARDINALITIES.find(x => x.value === r.cardinality) || CARDINALITIES[1];
+    let label = String(r.label || '').trim().replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, '-');
+    if(!label) label = 'relates';
+    lines.push(`    ${sanitizeName(fromEnt.name)} ${c.symbol} ${sanitizeName(toEnt.name)} : ${label}`);
+  });
+
+  return lines.join('\n');
+}
+const currentCode = () => customCode ?? generateMermaidCode();
+
+/* ============================================================
+   8. SQL GENERATION (PK / FK aware)
+============================================================ */
+function entityPk(ent){
+  return state.attributes.find(a => a.entityId === ent.id && a.isPK) || null;
+}
+
+function inferFkTarget(ent, attr){
+  const rels = state.relationships.filter(r => r.fromEntityId === ent.id || r.toEntityId === ent.id);
+  const base = attr.name.toLowerCase().replace(/_?ids?$/, '');
+  for(const r of rels){
+    const otherId = r.fromEntityId === ent.id ? r.toEntityId : r.fromEntityId;
+    const other = getEntity(otherId);
+    if(!other) continue;
+    const ol = other.name.toLowerCase();
+    if(base && (base === ol || base.includes(ol) || ol.includes(base))) return other;
+  }
+  if(rels.length === 1){
+    const otherId = rels[0].fromEntityId === ent.id ? rels[0].toEntityId : rels[0].fromEntityId;
+    return getEntity(otherId);
+  }
+  return null;
+}
+
+function generateSQL(){
+  const out = [];
+  out.push('-- ==================================================');
+  out.push('-- ER Diagram Builder · Generated SQL Schema');
+  out.push(`-- ${new Date().toLocaleString()}`);
+  out.push('-- ==================================================');
+  out.push('');
+  let tableCount = 0;
+
+  /* One table per entity */
+  state.entities.forEach(ent => {
+    const attrs = state.attributes.filter(a => a.entityId === ent.id);
+    const tName = snake(ent.name);
+    if(!attrs.length){
+      out.push(`-- Table "${tName}" skipped: no attributes defined.`);
+      out.push('');
+      return;
+    }
+    const colLines = [];
+    const pkCols = [];
+    const fkLines = [];
+    attrs.forEach(a => {
+      let line = `    ${snake(a.name)} ${toSqlType(a.type)}${a.isPK ? ' NOT NULL' : ''}`;
+      if(a.isPK) pkCols.push(snake(a.name));
+      if(a.isFK){
+        const target = inferFkTarget(ent, a);
+        if(target){
+          const targetPk = entityPk(target);
+          const refCol = targetPk ? snake(targetPk.name) : 'id';
+          fkLines.push(`    FOREIGN KEY (${snake(a.name)}) REFERENCES ${snake(target.name)} (${refCol})`);
+        }else{
+          line += '  -- FK: could not infer target table';
+        }
+      }
+      colLines.push(line);
+    });
+    if(pkCols.length) colLines.push(`    PRIMARY KEY (${pkCols.join(', ')})`);
+    colLines.push(...fkLines);
+    out.push(`CREATE TABLE ${tName} (`);
+    out.push(colLines.join(',\n'));
+    out.push(');');
+    out.push('');
+    tableCount++;
+  });
+
+  /* Junction tables for N:M relationships */
+  state.relationships.filter(r => r.cardinality === 'N:M').forEach(r => {
+    const fromEnt = getEntity(r.fromEntityId);
+    const toEnt = getEntity(r.toEntityId);
+    if(!fromEnt || !toEnt) return;
+    const jt = `${snake(fromEnt.name)}_${snake(toEnt.name)}`;
+    const c1 = `${snake(fromEnt.name)}_id`, c2 = `${snake(toEnt.name)}_id`;
+    const pk1 = entityPk(fromEnt), pk2 = entityPk(toEnt);
+    const t1 = pk1 ? toSqlType(pk1.type) : 'INT';
+    const t2 = pk2 ? toSqlType(pk2.type) : 'INT';
+    const ref1 = pk1 ? snake(pk1.name) : 'id';
+    const ref2 = pk2 ? snake(pk2.name) : 'id';
+    out.push(`-- Junction table for ${fromEnt.name} <> ${toEnt.name}${r.label ? ` ("${r.label}")` : ''}`);
+    out.push(`CREATE TABLE ${jt} (`);
+    out.push([
+      `    ${c1} ${t1} NOT NULL`,
+      `    ${c2} ${t2} NOT NULL`,
+      `    PRIMARY KEY (${c1}, ${c2})`,
+      `    FOREIGN KEY (${c1}) REFERENCES ${snake(fromEnt.name)} (${ref1}) ON DELETE CASCADE`,
+      `    FOREIGN KEY (${c2}) REFERENCES ${snake(toEnt.name)} (${ref2}) ON DELETE CASCADE`
+    ].join(',\n'));
+    out.push(');');
+    out.push('');
+    tableCount++;
+  });
+
+  if(!state.entities.length){
+    out.push('-- No entities yet. Add entities in the builder to generate SQL.');
+  }
+  return { sql: out.join('\n'), tableCount };
+}
+
+function renderSQL(){
+  const { sql, tableCount } = generateSQL();
+  lastSql = sql;
+  if(sqlBlock) sqlBlock.textContent = sql;
+  if(sqlTableCount) sqlTableCount.textContent = `${tableCount} table${tableCount !== 1 ? 's' : ''}`;
+}
+
+/* ============================================================
+   9. DIAGRAM RENDERING (Mermaid)
+============================================================ */
+function showError(msg){ if(errorText) errorText.textContent = msg; if(errorBanner) errorBanner.classList.remove('hidden'); }
+function hideError(){ if(errorBanner) errorBanner.classList.add('hidden'); }
+
+async function renderDiagram(){
+  const code = currentCode();
+  const hasContent = state.entities.length > 0 || (customCode !== null && customCode.trim().length > 0);
+  if(emptyState) emptyState.classList.toggle('hidden', hasContent);
+  if(diagramScroll) diagramScroll.classList.toggle('hidden', !hasContent);
+  if(!hasContent){ diagram.innerHTML = ''; hideError(); return false; }
+  if(!window.mermaid){ showError('Mermaid.js failed to load. Check your connection and refresh.'); return false; }
+  const seq = ++renderSeq;
+  try{
+    const { svg } = await mermaid.render('erd-' + seq, code);
+    if(seq !== renderSeq) return true;
+    diagram.innerHTML = svg;
+    diagramScroll.scrollTop = 0;
+    diagramScroll.scrollLeft = 0;
+    hideError();
+    return true;
+  }catch(err){
+    if(seq !== renderSeq) return false;
+    console.error(err);
+    showError('Diagram could not be rendered — check the Mermaid syntax.');
+    return false;
+  }
+}
+function scheduleRender(){ clearTimeout(renderTimer); renderTimer = setTimeout(renderDiagram, 250); }
+
+/* ============================================================
+   10. LIST RENDERING
+============================================================ */
+function populateEntitySelects(){
+  const entOpts = state.entities.map(e => `<option value="${e.id}">${escapeHtml(e.name)}</option>`).join('');
+
+  const prevAttr = attrEntitySelect.value;
+  attrEntitySelect.innerHTML = `<option value="">— Select entity —</option>` + entOpts;
+  const validAttr = getEntity(prevAttr) ? prevAttr : (getEntity(selectedEntityId) ? selectedEntityId : '');
+  attrEntitySelect.value = validAttr;
+  if(validAttr) selectedEntityId = validAttr;
+
+  const pf = relFrom.value, pt = relTo.value;
+  relFrom.innerHTML = `<option value="">Select…</option>` + entOpts;
+  relTo.innerHTML = `<option value="">Select…</option>` + entOpts;
+  if(getEntity(pf)) relFrom.value = pf;
+  if(getEntity(pt)) relTo.value = pt;
+}
+
+function renderEntityList(){
+  if(!state.entities.length){
+    entityList.innerHTML = miniEmpty('fa-cube', 'No entities yet. Add your first entity above.');
+    return;
+  }
+  entityList.innerHTML = state.entities.map(e => {
+    const attrCount = state.attributes.filter(a => a.entityId === e.id).length;
+    const relCount = state.relationships.filter(r => r.fromEntityId === e.id || r.toEntityId === e.id).length;
+    const isSel = e.id === selectedEntityId;
+    const isEditing = e.id === editingEntityId;
+    return `<div class="list-item ${isSel ? 'selected' : ''}" data-id="${e.id}">
+      <div class="item-icon"><i class="fa-solid fa-cube"></i></div>
+      <div class="item-body">
+        ${isEditing
+          ? `<input class="rename-input" value="${escapeHtml(e.name)}" maxlength="40" spellcheck="false"/>`
+          : `<div class="item-name">${escapeHtml(e.name)}</div>`}
+        <div class="item-meta">${attrCount} attribute${attrCount !== 1 ? 's' : ''} · ${relCount} relation${relCount !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="item-actions">
+        <button class="mini-btn" data-action="rename" data-id="${e.id}" title="Rename" aria-label="Rename entity"><i class="fa-solid fa-pen"></i></button>
+        <button class="mini-btn danger" data-action="delete" data-id="${e.id}" title="Delete" aria-label="Delete entity"><i class="fa-solid fa-trash-can"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+  const inp = entityList.querySelector('.rename-input');
+  if(inp){ inp.focus(); inp.select(); }
+}
+
+function renderAttributeList(){
+  const eid = attrEntitySelect.value;
+  const ent = getEntity(eid);
+  attrListTitle.textContent = ent ? ent.name : '—';
+  if(!ent){
+    attrList.innerHTML = state.entities.length
+      ? miniEmpty('fa-key', 'Select an entity above to manage its attributes.')
+      : miniEmpty('fa-key', 'Create an entity first, then add attributes here.');
+    return;
+  }
+  const attrs = state.attributes.filter(a => a.entityId === eid);
+  if(!attrs.length){
+    attrList.innerHTML = miniEmpty('fa-key', `No attributes yet for “${ent.name}”. Add the first one above.`);
+    return;
+  }
+  attrList.innerHTML = attrs.map(a => `
+    <div class="list-item">
+      <div class="item-icon ${a.isPK ? 'pk' : a.isFK ? 'fk' : ''}">
+        <i class="fa-solid ${a.isPK ? 'fa-key' : a.isFK ? 'fa-link' : 'fa-ellipsis'}"></i>
+      </div>
+      <div class="item-body">
+        <div class="item-name">${escapeHtml(a.name)}${a.isPK ? ' <span class="badge pk">PK</span>' : ''}${a.isFK ? ' <span class="badge fk">FK</span>' : ''}</div>
+        <div class="item-meta">${escapeHtml(a.type)}</div>
+      </div>
+      <div class="item-actions">
+        <button class="mini-btn" data-action="edit" data-id="${a.id}" title="Edit" aria-label="Edit attribute"><i class="fa-solid fa-pen"></i></button>
+        <button class="mini-btn danger" data-action="delete" data-id="${a.id}" title="Delete" aria-label="Delete attribute"><i class="fa-solid fa-trash-can"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function renderRelationshipList(){
+  if(!state.relationships.length){
+    relList.innerHTML = miniEmpty('fa-arrow-right-arrow-left', 'No relationships yet. Connect two entities above.');
+    return;
+  }
+  relList.innerHTML = state.relationships.map(r => `
+    <div class="list-item">
+      <div class="item-icon"><i class="fa-solid fa-arrow-right-long"></i></div>
+      <div class="item-body">
+        <div class="item-name">${escapeHtml(getEntityName(r.fromEntityId))} <i class="fa-solid fa-arrow-right-long rel-mini-arrow"></i> ${escapeHtml(getEntityName(r.toEntityId))}</div>
+        <div class="item-meta"><span class="badge card">${escapeHtml(r.cardinality)}</span> ${r.label ? escapeHtml(r.label) : '<span style="opacity:.6">no label</span>'}</div>
+      </div>
+      <div class="item-actions">
+        <button class="mini-btn" data-action="edit" data-id="${r.id}" title="Edit" aria-label="Edit relationship"><i class="fa-solid fa-pen"></i></button>
+        <button class="mini-btn danger" data-action="delete" data-id="${r.id}" title="Delete" aria-label="Delete relationship"><i class="fa-solid fa-trash-can"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function updateStats(){
+  if(statsEntities) statsEntities.textContent = state.entities.length;
+  if(statsAttrs) statsAttrs.textContent = state.attributes.length;
+  if(statsRels) statsRels.textContent = state.relationships.length;
+  if(tabCountEntities) tabCountEntities.textContent = state.entities.length;
+  if(tabCountAttrs) tabCountAttrs.textContent = state.attributes.length;
+  if(tabCountRels) tabCountRels.textContent = state.relationships.length;
+}
+
+function refreshAll(){
+  customCode = null; // builder becomes the source of truth again
+  populateEntitySelects();
+  renderEntityList();
+  renderAttributeList();
+  renderRelationshipList();
+  updateStats();
+  if(mermaidTextArea) mermaidTextArea.value = generateMermaidCode();
+  updateCodeStatus();
+  renderSQL();
+  scheduleRender();
+}
+
+/* ============================================================
+   11. ENTITY ACTIONS
+============================================================ */
+function selectEntity(id){
+  selectedEntityId = id;
+  const attrBeingEdited = state.attributes.find(a => a.id === editingAttributeId);
+  if(attrBeingEdited && attrBeingEdited.entityId !== id) cancelAttributeEdit(true);
+  attrEntitySelect.value = id;
+  setActiveTab('attributes');
+  renderEntityList();
+  renderAttributeList();
+}
+
+function commitRename(id, value){
+  if(editingEntityId !== id) return;
+  editingEntityId = null;
+  const ent = getEntity(id);
+  if(!ent){ renderEntityList(); return; }
+  const name = value.trim();
+  if(!name || name === ent.name){ renderEntityList(); return; }
+  if(state.entities.some(x => x.id !== id && x.name.toLowerCase() === name.toLowerCase())){
+    toast('An entity with this name already exists', 'error');
+    renderEntityList();
+    return;
+  }
+  if(state.entities.some(x => x.id !== id && sanitizeName(x.name) === sanitizeName(name))){
+    toast('Name conflicts with another entity in the diagram code', 'error');
+    renderEntityList();
+    return;
+  }
+  ent.name = name; // relationships reference IDs — nothing else to update
+  commit();
+  toast('Entity renamed', 'success');
+}
+
+async function deleteEntityFlow(id){
+  const ent = getEntity(id);
+  if(!ent) return;
+  const attrCount = state.attributes.filter(a => a.entityId === id).length;
+  const relCount = state.relationships.filter(r => r.fromEntityId === id || r.toEntityId === id).length;
+  const ok = await confirmDialog({
+    title: `Delete “${ent.name}”?`,
+    message: `This removes the entity${attrCount ? `, its ${attrCount} attribute(s)` : ''}${relCount ? ` and ${relCount} linked relationship(s)` : ''}. This cannot be undone.`,
+    okText: 'Delete Entity'
+  });
+  if(!ok) return;
+  state.entities = state.entities.filter(e => e.id !== id);
+  state.attributes = state.attributes.filter(a => a.entityId !== id);
+  state.relationships = state.relationships.filter(r => r.fromEntityId !== id && r.toEntityId !== id);
+  if(selectedEntityId === id) selectedEntityId = state.entities[0]?.id || null;
+  commit();
+  toast('Entity deleted', 'info');
+}
+
+entityForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const name = entityNameInput.value.trim();
+  if(!name){ toast('Entity name is required', 'error'); entityNameInput.focus(); return; }
+  if(state.entities.some(x => x.name.toLowerCase() === name.toLowerCase())){
+    toast('An entity with this name already exists', 'error'); return;
+  }
+  if(state.entities.some(x => sanitizeName(x.name) === sanitizeName(name))){
+    toast('Name conflicts with another entity in the diagram code', 'error'); return;
+  }
+  const ent = { id: uid(), name };
+  state.entities.push(ent);
+  selectedEntityId = ent.id;
+  entityNameInput.value = '';
+  commit();
+  setActiveTab('attributes');
+  toast(`Entity “${name}” added — define its attributes`, 'success');
+});
+
+entityList.addEventListener('click', e => {
+  if(e.target.closest('.rename-input')) return;
+  const actBtn = e.target.closest('[data-action]');
+  if(actBtn){
+    if(actBtn.dataset.action === 'rename'){ editingEntityId = actBtn.dataset.id; renderEntityList(); }
+    else deleteEntityFlow(actBtn.dataset.id);
+    return;
+  }
+  const item = e.target.closest('.list-item');
+  if(item) selectEntity(item.dataset.id);
+});
+entityList.addEventListener('keydown', e => {
+  if(!e.target.classList.contains('rename-input')) return;
+  const item = e.target.closest('.list-item');
+  if(e.key === 'Enter'){ e.preventDefault(); commitRename(item.dataset.id, e.target.value); }
+  if(e.key === 'Escape'){ editingEntityId = null; renderEntityList(); }
+});
+entityList.addEventListener('focusout', e => {
+  if(!e.target.classList.contains('rename-input')) return;
+  const item = e.target.closest('.list-item');
+  if(item) commitRename(item.dataset.id, e.target.value);
+});
+
+/* ============================================================
+   12. ATTRIBUTE ACTIONS
+============================================================ */
+function cancelAttributeEdit(resetForm = true){
+  editingAttributeId = null;
+  attrCancelBtn.classList.add('hidden');
+  attrSubmitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Attribute';
+  if(resetForm){ attrNameInput.value = ''; chkPK.checked = false; chkFK.checked = false; }
+}
+
+function startAttributeEdit(id){
+  const a = state.attributes.find(x => x.id === id);
+  if(!a) return;
+  editingAttributeId = id;
+  selectedEntityId = a.entityId;
+  attrEntitySelect.value = a.entityId;
+  attrNameInput.value = a.name;
+  attrTypeSelect.value = a.type;
+  chkPK.checked = a.isPK;
+  chkFK.checked = a.isFK;
+  attrSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Update Attribute';
+  attrCancelBtn.classList.remove('hidden');
+  renderEntityList();
+  renderAttributeList();
+  attrNameInput.focus();
+}
+
+attrEntitySelect.addEventListener('change', () => {
+  selectedEntityId = attrEntitySelect.value || null;
+  cancelAttributeEdit(true);
+  renderEntityList();
+  renderAttributeList();
+});
+
+attrForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const entityId = attrEntitySelect.value;
+  if(!entityId){ toast('Choose an entity first', 'warning'); return; }
+  const name = attrNameInput.value.trim();
+  if(!name){ toast('Attribute name is required', 'error'); attrNameInput.focus(); return; }
+  const dup = state.attributes.some(a => a.entityId === entityId && a.id !== editingAttributeId && a.name.toLowerCase() === name.toLowerCase());
+  if(dup){ toast('This entity already has that attribute', 'error'); return; }
+  const data = { entityId, name, type: attrTypeSelect.value, isPK: chkPK.checked, isFK: chkFK.checked };
+  if(editingAttributeId){
+    const a = state.attributes.find(x => x.id === editingAttributeId);
+    if(a) Object.assign(a, data);
+    toast('Attribute updated', 'success');
+  }else{
+    state.attributes.push({ id: uid(), ...data });
+    toast(`Attribute “${name}” added`, 'success');
+  }
+  cancelAttributeEdit(true);
+  commit();
+});
+
+attrCancelBtn.addEventListener('click', () => { cancelAttributeEdit(true); renderAttributeList(); });
+
+attrList.addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  if(btn.dataset.action === 'edit'){ startAttributeEdit(id); return; }
+  state.attributes = state.attributes.filter(a => a.id !== id);
+  if(editingAttributeId === id) cancelAttributeEdit(true);
+  commit();
+  toast('Attribute removed', 'info');
+});
+
+/* ============================================================
+   13. RELATIONSHIP ACTIONS (entity-ID based)
+============================================================ */
+function cancelRelationshipEdit(reset = true){
+  editingRelationshipId = null;
+  relCancelBtn.classList.add('hidden');
+  relSubmitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Relationship';
+  if(reset){ relFrom.value = ''; relTo.value = ''; relCardinality.value = '1:N'; relLabel.value = ''; }
+}
+
+function startRelationshipEdit(id){
+  const r = state.relationships.find(x => x.id === id);
+  if(!r) return;
+  editingRelationshipId = id;
+  relFrom.value = r.fromEntityId;
+  relTo.value = r.toEntityId;
+  relCardinality.value = r.cardinality;
+  relLabel.value = r.label || '';
+  relSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Update Relationship';
+  relCancelBtn.classList.remove('hidden');
+  relLabel.focus();
+}
+
+relForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const fromEntityId = relFrom.value, toEntityId = relTo.value;
+  if(!fromEntityId || !toEntityId){ toast('Select both entities', 'warning'); return; }
+  if(fromEntityId === toEntityId){ toast('A relationship needs two different entities', 'error'); return; }
+  const payload = { fromEntityId, toEntityId, cardinality: relCardinality.value, label: relLabel.value.trim() };
+  if(editingRelationshipId){
+    const rel = state.relationships.find(r => r.id === editingRelationshipId);
+    if(rel) Object.assign(rel, payload);
+    toast('Relationship updated', 'success');
+  }else{
+    state.relationships.push({ id: uid(), ...payload });
+    toast('Relationship added', 'success');
+  }
+  cancelRelationshipEdit(true);
+  commit();
+});
+
+relCancelBtn.addEventListener('click', () => { cancelRelationshipEdit(true); renderRelationshipList(); });
+
+relList.addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  if(btn.dataset.action === 'edit'){ startRelationshipEdit(id); return; }
+  state.relationships = state.relationships.filter(r => r.id !== id);
+  if(editingRelationshipId === id) cancelRelationshipEdit(true);
+  commit();
+  toast('Relationship removed', 'info');
+});
+
+/* ============================================================
+   14. SIDEBAR TABS / DRAWER
+============================================================ */
+function setActiveTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+}
+document.querySelectorAll('.tab-btn').forEach(b =>
+  b.addEventListener('click', () => setActiveTab(b.dataset.tab)));
+
+function openDrawer(){ sidebar.classList.add('open'); sidebarBackdrop.classList.add('show'); }
+function closeDrawer(){ sidebar.classList.remove('open'); sidebarBackdrop.classList.remove('show'); }
+$('sidebarToggle').addEventListener('click', openDrawer);
+sidebarBackdrop.addEventListener('click', closeDrawer);
+
+/* ============================================================
+   15. WORKSPACE VIEWS / ZOOM
+============================================================ */
+const viewButtons = {
+  diagram: $('viewDiagramBtn'),
+  code: $('viewCodeBtn'),
+  sql: $('viewSqlBtn')
+};
+function setView(v){
+  $('diagramView').classList.toggle('active', v === 'diagram');
+  $('codeView').classList.toggle('active', v === 'code');
+  $('sqlView').classList.toggle('active', v === 'sql');
+  Object.entries(viewButtons).forEach(([key, btn]) => btn && btn.classList.toggle('active', key === v));
+  if(zoomGroup) zoomGroup.classList.toggle('hidden', v !== 'diagram');
+}
+viewButtons.diagram?.addEventListener('click', () => setView('diagram'));
+viewButtons.code?.addEventListener('click', () => setView('code'));
+viewButtons.sql?.addEventListener('click', () => setView('sql'));
+
+function setZoom(z){
+  zoomLevel = Math.min(2.5, Math.max(0.4, Math.round(z * 20) / 20));
+  diagramZoom.style.transform = `scale(${zoomLevel})`;
+  if(zoomLevelEl) zoomLevelEl.textContent = Math.round(zoomLevel * 100) + '%';
+}
+$('zoomIn')?.addEventListener('click', () => setZoom(zoomLevel + 0.15));
+$('zoomOut')?.addEventListener('click', () => setZoom(zoomLevel - 0.15));
+$('zoomReset')?.addEventListener('click', () => setZoom(1));
+
+/* ============================================================
+   16. CODE TAB (editable Mermaid)
+============================================================ */
+function updateCodeStatus(){
+  if(!codeStatus || !mermaidTextArea) return;
+  const dirty = mermaidTextArea.value !== generateMermaidCode();
+  codeStatus.textContent = dirty ? 'Modified — press Update to apply' : 'In sync with builder';
+  codeStatus.className = 'code-status ' + (dirty ? 'dirty' : 'synced');
+}
+mermaidTextArea.addEventListener('input', updateCodeStatus);
+
+$('updateDiagramBtn').addEventListener('click', async () => {
+  const code = mermaidTextArea.value.trim();
+  if(!code){ toast('The code editor is empty', 'warning'); return; }
+  customCode = code;
+  setView('diagram');
+  const ok = await renderDiagram();
+  if(ok) toast('Diagram updated from your code', 'success');
+  else toast('Could not render — check the Mermaid syntax', 'error');
+});
+
+$('resetCodeBtn').addEventListener('click', () => {
+  customCode = null;
+  mermaidTextArea.value = generateMermaidCode();
+  updateCodeStatus();
+  scheduleRender();
+  toast('Code reset to builder state', 'info');
+});
+
+async function copyText(text, okMsg){
+  try{
+    await navigator.clipboard.writeText(text);
+    toast(okMsg, 'success');
+  }catch(err){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); toast(okMsg, 'success'); }
+    catch(e2){ toast('Copy failed', 'error'); }
+    ta.remove();
+  }
+}
+$('copyCodeBtn')?.addEventListener('click', () =>
+  copyText(mermaidTextArea.value || generateMermaidCode(), 'Mermaid code copied to clipboard'));
+$('codeCopyBtn')?.addEventListener('click', () =>
+  copyText(mermaidTextArea.value || generateMermaidCode(), 'Mermaid code copied to clipboard'));
+
+/* ============================================================
+   17. EXPORTS (.mmd / SVG / PNG)
+============================================================ */
+function downloadBlob(blob, filename){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+$('downloadMmdBtn')?.addEventListener('click', () => {
+  downloadBlob(new Blob([currentCode()], { type: 'text/plain' }), 'er-diagram.mmd');
+  toast('Mermaid file downloaded', 'success');
+});
+
+$('downloadSvgBtn')?.addEventListener('click', () => {
+  const svgEl = diagram.querySelector('svg');
+  if(!svgEl){ toast('Nothing to export yet', 'warning'); return; }
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  downloadBlob(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' }), 'er-diagram.svg');
+  toast('SVG downloaded', 'success');
+});
+
+$('downloadPngBtn')?.addEventListener('click', () => {
+  const svgEl = diagram.querySelector('svg');
+  if(!svgEl){ toast('Nothing to export yet', 'warning'); return; }
+  const w = parseFloat(svgEl.getAttribute('width')) || svgEl.clientWidth || 800;
+  const h = parseFloat(svgEl.getAttribute('height')) || svgEl.clientHeight || 600;
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('width', w);
+  clone.setAttribute('height', h);
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' }));
+  const img = new Image();
+  img.onload = () => {
+    const scale = 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(b => {
+      if(b){ downloadBlob(b, 'er-diagram.png'); toast('PNG downloaded', 'success'); }
+      else toast('PNG export failed', 'error');
+    }, 'image/png');
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast('PNG export failed', 'error'); };
+  img.src = url;
+});
+
+/* ============================================================
+   18. SQL TAB + PAYWALL (state.isSqlUnlocked)
+============================================================ */
+copySqlBtn.addEventListener('click', () =>
+  copyText(lastSql || generateSQL().sql, 'SQL copied to clipboard'));
+
+downloadSqlBtn.addEventListener('click', () => {
+  if(!state.isSqlUnlocked){ openPaywall(); return; }
+  downloadBlob(new Blob([lastSql || generateSQL().sql], { type: 'application/sql' }), 'er-schema.sql');
+  toast('SQL schema downloaded', 'success');
+});
+
+paywallLockBtn.addEventListener('click', () => {
+  if(state.isSqlUnlocked){ toast('SQL Export is already unlocked', 'success'); return; }
+  openPaywall();
+});
+
+function applyPaidState(){
+  document.body.classList.toggle('sql-unlocked', state.isSqlUnlocked);
+  downloadSqlBtn.classList.toggle('locked', !state.isSqlUnlocked);
+  downloadSqlBtn.innerHTML = state.isSqlUnlocked
+    ? '<i class="fa-solid fa-file-arrow-down"></i> Download .sql'
+    : '<i class="fa-solid fa-lock"></i> Download .sql';
+  paywallLockBtn.innerHTML = state.isSqlUnlocked
+    ? '<i class="fa-solid fa-lock-open"></i>'
+    : '<i class="fa-solid fa-lock"></i>';
+  paywallLockBtn.title = state.isSqlUnlocked ? 'SQL export unlocked' : 'SQL export is locked — click to unlock';
+  paywallLockBtn.classList.toggle('gate-locked', !state.isSqlUnlocked);
+  paywallLockBtn.classList.toggle('gate-open', state.isSqlUnlocked);
+}
+
+function openPaywall(){
+  if(state.isSqlUnlocked){ toast('SQL Export is already unlocked', 'success'); return; }
+  resetPayBtn();
+  paywallOverlay.classList.add('show');
+}
+function closePaywall(){ paywallOverlay.classList.remove('show'); }
+function resetPayBtn(){
+  clearTimeout(payTimer);
+  payBtn.disabled = false;
+  payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Pay $2.99';
+}
+
+payBtn.addEventListener('click', () => {
+  if(state.isSqlUnlocked || payBtn.disabled) return;
+  payBtn.disabled = true;
+  payBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing…';
+  payTimer = setTimeout(() => {
+    state.isSqlUnlocked = true;   // paywall toggle flipped
+    saveState();                  // persist unlock state
+    resetPayBtn();
+    closePaywall();
+    applyPaidState();
+    toast('🎉 SQL Export unlocked — thank you!', 'success');
+  }, 1500);
+});
+
+$('paywallClose')?.addEventListener('click', closePaywall);
+paywallOverlay.addEventListener('click', e => { if(e.target === paywallOverlay) closePaywall(); });
+
+/* ============================================================
+   19. HEADER ACTIONS (Save / Sample / Clear)
+============================================================ */
+$('saveBtn').addEventListener('click', () => {
+  saveState();
+  toast('Diagram saved to this browser', 'success');
+});
+
+$('clearBtn').addEventListener('click', async () => {
+  if(!state.entities.length && !state.relationships.length){ toast('Nothing to clear', 'info'); return; }
+  const ok = await confirmDialog({
+    title: 'Clear everything?',
+    message: 'All entities, attributes and relationships will be removed. This cannot be undone.',
+    okText: 'Clear All'
+  });
+  if(!ok) return;
+  state.entities = [];
+  state.attributes = [];
+  state.relationships = [];
+  selectedEntityId = null;
+  editingEntityId = null;
+  cancelAttributeEdit(true);
+  cancelRelationshipEdit(true);
+  commit();
+  toast('Canvas cleared', 'info');
+});
+
+async function loadSample(){
+  if(state.entities.length){
+    const ok = await confirmDialog({
+      title: 'Load sample diagram?',
+      message: 'Your current diagram will be replaced by the sample University model.',
+      okText: 'Load Sample',
+      danger: false
+    });
+    if(!ok) return;
+  }
+  applyState(sampleState());
+  selectedEntityId = state.entities[0]?.id || null;
+  editingEntityId = null;
+  cancelAttributeEdit(true);
+  cancelRelationshipEdit(true);
+  setZoom(1);
+  commit();
+  toast('Sample diagram loaded', 'success');
+}
+$('sampleBtn').addEventListener('click', loadSample);
+$('emptySampleBtn').addEventListener('click', loadSample);
+
+/* ============================================================
+   20. CONFIRM MODAL + KEYBOARD SHORTCUTS
+============================================================ */
+$('confirmOk').addEventListener('click', () => closeConfirm(true));
+$('confirmCancel').addEventListener('click', () => closeConfirm(false));
+$('confirmOverlay').addEventListener('click', e => { if(e.target === $('confirmOverlay')) closeConfirm(false); });
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    if(confirmResolver) closeConfirm(false);
+    else if(paywallOverlay.classList.contains('show')) closePaywall();
+    else closeDrawer();
+  }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's'){
+    e.preventDefault();
+    saveState();
+    toast('Diagram saved to this browser', 'success');
+  }
+});
+
+/* ============================================================
+   21. INIT
+============================================================ */
+(function init(){
+  if(window.mermaid){
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      er: { layoutDirection: 'TB', useMaxWidth: false, entityPadding: 14 },
+      themeVariables: {
+        fontFamily: "'Inter', sans-serif",
+        fontSize: '14px',
+        primaryColor: '#eef2ff',
+        primaryTextColor: '#1e293b',
+        primaryBorderColor: '#6366f1',
+        lineColor: '#818cf8',
+        textColor: '#334155'
+      }
+    });
+  }
+
+  if(attrTypeSelect){
+    attrTypeSelect.innerHTML = TYPE_OPTIONS.map(t => `<option value="${t}">${t}</option>`).join('');
+    attrTypeSelect.value = 'int';
+  }
+  if(relCardinality){
+    relCardinality.innerHTML = CARDINALITIES.map(c => `<option value="${c.value}">${c.label}</option>`).join('');
+    relCardinality.value = '1:N';
+  }
+
+  /* Load persisted state, otherwise bootstrap with sample data */
+  if(!loadState()){
+    applyState(sampleState());
+    saveState();
+  }
+  selectedEntityId = state.entities[0]?.id || null;
+
+  setZoom(1);
+  applyPaidState();
+  refreshAll();
+})();
+</script>
+</body>
+</html>
